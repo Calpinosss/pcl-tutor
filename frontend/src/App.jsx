@@ -19,10 +19,26 @@ import { seedAvailability, slotKey } from './lib/slots';
 
 function read(key, fallback) {
   try {
-    const value = localStorage.getItem(key);
+    const value = window.localStorage.getItem(key);
     return value ? JSON.parse(value) : fallback;
   } catch {
     return fallback;
+  }
+}
+
+function write(key, value) {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    return;
+  }
+}
+
+function remove(key) {
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    return;
   }
 }
 
@@ -47,21 +63,21 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    localStorage.setItem('pcl-theme-v7', JSON.stringify(theme));
+    write('pcl-theme-v7', theme);
   }, [theme]);
 
   useEffect(() => {
     document.documentElement.style.setProperty('--accent', accent);
-    localStorage.setItem('pcl-accent-v7', JSON.stringify(accent));
+    write('pcl-accent-v7', accent);
   }, [accent]);
 
   useEffect(() => {
-    localStorage.setItem('pcl-sidebar-v7', JSON.stringify(collapsed));
+    write('pcl-sidebar-v7', collapsed);
   }, [collapsed]);
 
   useEffect(() => {
-    if (user) localStorage.setItem('pcl-user-v7', JSON.stringify(user));
-    else localStorage.removeItem('pcl-user-v7');
+    if (user) write('pcl-user-v7', user);
+    else remove('pcl-user-v7');
   }, [user]);
 
   // Login checks the hardcoded account list; no backend or real auth is needed for UTS.
@@ -77,7 +93,31 @@ export default function App() {
   const logout = () => setUser(null);
 
   const updateUser = (patch) => {
-    setUser((current) => current ? { ...current, ...patch } : current);
+    if (!user) return;
+    const next = { ...user, ...patch };
+    const renamed = Boolean(patch.name && patch.name !== user.name);
+
+    if (renamed && user.role === 'student') {
+      setSessions((items) => items.map((session) => (
+        session.studentName === user.name ? { ...session, studentName: patch.name } : session
+      )));
+      setRequests((items) => items.map((request) => (
+        request.studentName === user.name
+          ? { ...request, studentName: patch.name, studentInitials: next.initials }
+          : request
+      )));
+    }
+
+    if (renamed && user.role === 'tutor' && user.tutorId) {
+      setSessions((items) => items.map((session) => (
+        session.tutorId === user.tutorId ? { ...session, tutorName: patch.name } : session
+      )));
+      setRequests((items) => items.map((request) => (
+        request.tutorId === user.tutorId ? { ...request, tutorName: patch.name } : request
+      )));
+    }
+
+    setUser(next);
   };
 
   // Booking creates both sides of the same request so Student and Tutor views stay in sync.

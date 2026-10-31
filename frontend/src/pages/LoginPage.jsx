@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { DEMO_ACCOUNTS } from '../data/mockData';
 import Brand from '../components/Brand';
 import { Icon } from '../components/icons';
@@ -9,6 +9,7 @@ export default function LoginPage({ onLogin }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [rolePreview, setRolePreview] = useState('student');
+  const timerRef = useRef(null);
 
   useEffect(() => {
     const account = DEMO_ACCOUNTS.find((item) => item.role === rolePreview);
@@ -19,8 +20,13 @@ export default function LoginPage({ onLogin }) {
     }
   }, [rolePreview]);
 
+  useEffect(() => () => {
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+  }, []);
+
   const submit = (event) => {
     event.preventDefault();
+    if (loading) return;
     setError('');
     const matched = DEMO_ACCOUNTS.find((item) => item.username === username.trim() && item.password === password);
     if (!matched) {
@@ -28,7 +34,7 @@ export default function LoginPage({ onLogin }) {
       return;
     }
     setLoading(true);
-    window.setTimeout(() => {
+    timerRef.current = window.setTimeout(() => {
       onLogin(matched);
       setLoading(false);
     }, 350);
