@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'rest_framework',
     "rest_framework_simplejwt",
     "django_mongodb_backend",
+    "corsheaders",
 
     # Apps
     'users',
@@ -71,6 +72,7 @@ MIGRATION_MODULES = {
 }
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -115,6 +117,15 @@ DATABASES = {
         "NAME": "lmsuph",
     }
 }
+
+# CORS — the React dev server runs on a different origin (port 5173) than this
+# API (port 8000), so cross-origin requests from the frontend must be allowed.
+# Override with a comma-separated CORS_ALLOWED_ORIGINS in .env for other hosts.
+CORS_ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173").split(",")
+    if origin.strip()
+]
 
 
 # Password validation
